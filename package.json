@@ -2,11 +2,21 @@
   "name": "wcag-agent",
   "version": "1.0.0",
   "description": "WCAG 2.2 AA accessibility reviewer agent — install for Claude Code, Cursor, GitHub Copilot, or Windsurf",
-  "keywords": ["wcag", "accessibility", "a11y", "wcag22", "claude", "cursor", "copilot", "windsurf", "agent"],
+  "keywords": [
+    "wcag",
+    "accessibility",
+    "a11y",
+    "wcag22",
+    "claude",
+    "cursor",
+    "copilot",
+    "windsurf",
+    "agent"
+  ],
   "author": "Alonso Salguero",
   "license": "MIT",
   "bin": {
-    "wcag-agent": "./bin/install.js"
+    "wcag-agent": "bin/install.js"
   },
   "files": [
     "bin/",
