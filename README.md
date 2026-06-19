@@ -90,6 +90,10 @@ Every audit returns:
 - **Passes correctly** — what is already implemented well
 - **Manual testing checklist** — what must be verified in a real browser
 
+## Background
+
+This agent was developed and battle-tested as part of a larger accessibility audit project before being published as a standalone tool.
+
 ## Requirements
 
 - Node.js ≥ 16
