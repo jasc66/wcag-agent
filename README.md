@@ -7,7 +7,11 @@ Install once, audit any React / Next.js component directly from source code — 
 ## Install
 
 ```bash
+# npm
 npx wcag-agent
+
+# pnpm
+pnpm dlx wcag-agent
 ```
 
 You will be prompted to choose your AI assistant:
