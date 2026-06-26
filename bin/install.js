@@ -38,7 +38,7 @@ color: green
 `,
   'claude-project': null,
   cursor: `---
-description: WCAG 2.2 AA accessibility reviewer — audit React/Next.js components from source code without a running server
+description: WCAG 2.2 AA accessibility reviewer — audit React/Next.js and Vue 3/Nuxt components from source code without a running server
 globs:
 alwaysApply: false
 ---
@@ -46,12 +46,23 @@ alwaysApply: false
 `,
   windsurf: `---
 trigger: manual
-description: WCAG 2.2 AA accessibility reviewer for React/Next.js projects
+description: WCAG 2.2 AA accessibility reviewer for React/Next.js and Vue 3/Nuxt projects
 ---
 
 `,
+  'zed-global': '',
+  'zed-project': '',
+  'continue-global': `---
+name: WCAG 2.2 Accessibility Reviewer
+description: Audit React/Next.js and Vue 3/Nuxt components for WCAG 2.2 compliance from source code
+---
+
+`,
+  'continue-project': null,
+  aider: '',
 }
 HEADERS['claude-project'] = HEADERS['claude-global']
+HEADERS['continue-project'] = HEADERS['continue-global']
 
 const PLATFORMS = [
   {
@@ -84,6 +95,36 @@ const PLATFORMS = [
     getPath: () => path.join(process.cwd(), '.windsurf', 'rules', 'accessibility.md'),
     usage: 'In Windsurf: trigger the rule manually when reviewing accessibility',
   },
+  {
+    id: 'zed-global',
+    label: 'Zed — global (all projects)',
+    getPath: () => path.join(os.homedir(), '.config', 'zed', 'prompts', 'accessibility-reviewer.md'),
+    usage: 'In Zed AI panel: type /prompt accessibility-reviewer to apply',
+  },
+  {
+    id: 'zed-project',
+    label: 'Zed — project only (current directory)',
+    getPath: () => path.join(process.cwd(), '.zed', 'rules', 'accessibility.md'),
+    usage: 'Zed will pick up rules from .zed/rules/ automatically in this project',
+  },
+  {
+    id: 'continue-global',
+    label: 'Continue.dev — global (all projects)',
+    getPath: () => path.join(os.homedir(), '.continue', 'rules', 'accessibility-reviewer.md'),
+    usage: 'Continue.dev will apply these rules automatically across all projects',
+  },
+  {
+    id: 'continue-project',
+    label: 'Continue.dev — project only (current directory)',
+    getPath: () => path.join(process.cwd(), '.continue', 'rules', 'accessibility-reviewer.md'),
+    usage: 'Continue.dev will apply these rules automatically in this project',
+  },
+  {
+    id: 'aider',
+    label: 'Aider',
+    getPath: () => path.join(process.cwd(), '.aider', 'accessibility.md'),
+    usage: 'Run aider with: --read .aider/accessibility.md  (or add it to .aider.conf.yml)',
+  },
 ]
 
 function ensureDir(filePath) {
@@ -97,30 +138,40 @@ function isInstalled(platform) {
   const targetPath = platform.getPath()
   if (!fs.existsSync(targetPath)) return false
   try {
-    return fs.readFileSync(targetPath, 'utf8').includes('WCAG 2.2 AA')
+    return fs.readFileSync(targetPath, 'utf8').includes('WCAG 2.2')
   } catch {
     return false
   }
 }
 
-function install(platform) {
+function getLevelNote(level) {
+  if (level === 'A')
+    return '> **Conformance scope:** Review for WCAG 2.2 **Level A** success criteria only. Skip Level AA and AAA checks.\n\n'
+  if (level === 'AAA')
+    return '> **Conformance scope:** Review for WCAG 2.2 **Level A, AA, and AAA** success criteria (exhaustive review).\n\n'
+  return ''
+}
+
+function install(platform, level) {
   const targetPath = platform.getPath()
+  const levelNote = getLevelNote(level)
+  const body = levelNote + AGENT_CONTENT
 
   let content
   if (platform.id === 'copilot') {
     if (fs.existsSync(targetPath)) {
       const existing = fs.readFileSync(targetPath, 'utf8')
-      if (existing.includes('WCAG 2.2 AA')) {
+      if (existing.includes('WCAG 2.2')) {
         console.log('\n  Already installed in ' + targetPath)
         console.log('\n  Run again after removing the existing WCAG section to reinstall.\n')
         return
       }
-      content = existing.trimEnd() + '\n\n---\n\n' + AGENT_CONTENT
+      content = existing.trimEnd() + '\n\n---\n\n' + body
     } else {
-      content = AGENT_CONTENT
+      content = body
     }
   } else {
-    content = HEADERS[platform.id] + AGENT_CONTENT
+    content = HEADERS[platform.id] + body
   }
 
   ensureDir(targetPath)
@@ -144,7 +195,7 @@ function uninstallPlatform(platform) {
       const existing = fs.readFileSync(targetPath, 'utf8')
       const marker = '\n\n---\n\n'
       const idx = existing.indexOf(marker)
-      if (idx !== -1 && existing.slice(idx + marker.length).includes('WCAG 2.2 AA')) {
+      if (idx !== -1 && existing.slice(idx + marker.length).includes('WCAG 2.2')) {
         const before = existing.slice(0, idx).trim()
         if (before.length === 0) {
           fs.unlinkSync(targetPath)
@@ -163,9 +214,18 @@ function uninstallPlatform(platform) {
   }
 }
 
-function upgrade() {
-  console.log('\n  WCAG 2.2 AA Accessibility Reviewer Agent — Upgrade')
-  console.log('  ───────────────────────────────────────────────────\n')
+function parseSelections(input, max) {
+  const trimmed = input.trim().toLowerCase()
+  if (trimmed === 'all') return Array.from({ length: max }, (_, i) => i)
+  return trimmed
+    .split(/[\s,]+/)
+    .map((s) => parseInt(s, 10) - 1)
+    .filter((i) => !isNaN(i) && i >= 0 && i < max)
+}
+
+function upgrade(level) {
+  console.log('\n  WCAG 2.2 Accessibility Reviewer Agent — Upgrade')
+  console.log('  ─────────────────────────────────────────────────\n')
 
   const installed = PLATFORMS.filter(isInstalled)
 
@@ -176,7 +236,6 @@ function upgrade() {
 
   console.log('  Found ' + installed.length + ' installation(s). Updating...\n')
   installed.forEach((p) => {
-    // For copilot, temporarily remove the WCAG section so install() can re-append it cleanly
     if (p.id === 'copilot') {
       const targetPath = p.getPath()
       const existing = fs.readFileSync(targetPath, 'utf8')
@@ -187,15 +246,15 @@ function upgrade() {
         fs.writeFileSync(targetPath, before.length > 0 ? before + '\n' : '', 'utf8')
       }
     }
-    install(p)
+    install(p, level)
   })
 
   console.log('  ✓ ' + installed.length + ' installation(s) updated to the latest version.\n')
 }
 
 function uninstall() {
-  console.log('\n  WCAG 2.2 AA Accessibility Reviewer Agent — Uninstall')
-  console.log('  ──────────────────────────────────────────────────────\n')
+  console.log('\n  WCAG 2.2 Accessibility Reviewer Agent — Uninstall')
+  console.log('  ───────────────────────────────────────────────────\n')
 
   const installed = PLATFORMS.filter(isInstalled)
 
@@ -242,8 +301,16 @@ function uninstall() {
 function main() {
   const args = process.argv.slice(2)
 
+  const levelIdx = args.findIndex((a) => a === '--level')
+  const rawLevel = levelIdx !== -1 ? (args[levelIdx + 1] || '').toUpperCase() : 'AA'
+  if (!['A', 'AA', 'AAA'].includes(rawLevel)) {
+    console.error('\n  Invalid level "' + args[levelIdx + 1] + '". Use --level A, --level AA, or --level AAA.\n')
+    process.exit(1)
+  }
+  const level = rawLevel
+
   if (args.includes('--upgrade')) {
-    upgrade()
+    upgrade(level)
     return
   }
 
@@ -252,23 +319,38 @@ function main() {
     return
   }
 
-  console.log('\n  WCAG 2.2 AA Accessibility Reviewer Agent')
+  if (args.includes('--all')) {
+    console.log('\n  WCAG 2.2 Accessibility Reviewer Agent — Install All')
+    console.log('  ────────────────────────────────────────────────────\n')
+    if (level !== 'AA') console.log('  Level: WCAG 2.2 ' + level + '\n')
+    PLATFORMS.forEach((p) => install(p, level))
+    return
+  }
+
+  console.log('\n  WCAG 2.2 Accessibility Reviewer Agent')
   console.log('  ─────────────────────────────────────────\n')
-  console.log('  Select your AI coding assistant:\n')
-  PLATFORMS.forEach((p, i) => console.log('  ' + (i + 1) + '. ' + p.label))
+  if (level !== 'AA') console.log('  Level: WCAG 2.2 ' + level + '\n')
+  console.log('  Select your AI coding assistant(s):\n')
+  PLATFORMS.forEach((p, i) => {
+    const mark = isInstalled(p) ? ' [installed]' : ''
+    console.log('  ' + (i + 1) + '. ' + p.label + mark)
+  })
   console.log()
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
 
-  rl.question('  Choice [1-' + PLATFORMS.length + ']: ', (answer) => {
-    rl.close()
-    const idx = parseInt(answer, 10) - 1
-    if (isNaN(idx) || idx < 0 || idx >= PLATFORMS.length) {
-      console.log('\n  Invalid choice. Enter a number between 1 and ' + PLATFORMS.length + '.\n')
-      process.exit(1)
+  rl.question(
+    '  Choice(s) [1-' + PLATFORMS.length + ', space/comma-separated, or "all"]: ',
+    (answer) => {
+      rl.close()
+      const indices = parseSelections(answer, PLATFORMS.length)
+      if (indices.length === 0) {
+        console.log('\n  Invalid choice. Enter number(s) between 1 and ' + PLATFORMS.length + ', or "all".\n')
+        process.exit(1)
+      }
+      indices.forEach((i) => install(PLATFORMS[i], level))
     }
-    install(PLATFORMS[idx])
-  })
+  )
 }
 
 main()

@@ -1,7 +1,7 @@
 {
   "name": "wcag-agent",
-  "version": "1.2.0",
-  "description": "WCAG 2.2 AA accessibility reviewer agent — install for Claude Code, Cursor, GitHub Copilot, or Windsurf. Supports React/Next.js and Vue 3/Nuxt.",
+  "version": "1.3.0",
+  "description": "WCAG 2.2 accessibility reviewer agent — install for Claude Code, Cursor, GitHub Copilot, Windsurf, Zed, Continue.dev, or Aider. Supports React/Next.js and Vue 3/Nuxt.",
   "keywords": [
     "wcag",
     "accessibility",
@@ -16,6 +16,9 @@
     "cursor",
     "copilot",
     "windsurf",
+    "zed",
+    "continue",
+    "aider",
     "agent"
   ],
   "author": "Alonso Salguero",

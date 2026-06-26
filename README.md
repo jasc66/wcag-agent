@@ -1,6 +1,6 @@
 # wcag-agent
 
-WCAG 2.2 AA accessibility reviewer agent for AI coding assistants.
+WCAG 2.2 accessibility reviewer agent for AI coding assistants.
 
 Install once, audit any React / Next.js or Vue 3 / Nuxt component directly from source code — no running server, no browser extension.
 
@@ -14,22 +14,52 @@ npx wcag-agent
 pnpm dlx wcag-agent
 ```
 
-You will be prompted to choose your AI assistant:
+You will be prompted to choose one or more AI assistants:
 
 ```
-  WCAG 2.2 AA Accessibility Reviewer Agent
+  WCAG 2.2 Accessibility Reviewer Agent
   ─────────────────────────────────────────
+
+  Select your AI coding assistant(s):
 
   1. Claude Code — global (all projects)
   2. Claude Code — project only (current directory)
   3. Cursor
   4. GitHub Copilot
   5. Windsurf
+  6. Zed — global (all projects)
+  7. Zed — project only (current directory)
+  8. Continue.dev — global (all projects)
+  9. Continue.dev — project only (current directory)
+  10. Aider
 
-  Choice [1-5]:
+  Choice(s) [1-10, space/comma-separated, or "all"]:
 ```
 
-The agent file is copied to the correct location for your tool, with the right frontmatter for each platform. If a previous version exists, a `.bak` backup is created automatically.
+Enter a single number, multiple numbers (`1 3 8`), or `all` to install everywhere at once. The agent file is copied to the correct location for each tool with the right frontmatter. If a previous version exists, a `.bak` backup is created automatically.
+
+### Install to all platforms at once
+
+```bash
+npx wcag-agent --all
+```
+
+### Conformance level
+
+By default the agent reviews for WCAG 2.2 **Level AA**. Override with `--level`:
+
+```bash
+# Level A only (minimum compliance)
+npx wcag-agent --level A
+
+# Level AA — default
+npx wcag-agent --level AA
+
+# Level AAA (exhaustive — government / Section 508 projects)
+npx wcag-agent --level AAA
+```
+
+The level flag works with all commands: `--upgrade`, `--all`, and interactive mode.
 
 ## Supported platforms
 
@@ -40,6 +70,11 @@ The agent file is copied to the correct location for your tool, with the right f
 | Cursor | `.cursor/rules/accessibility.mdc` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
 | Windsurf | `.windsurf/rules/accessibility.md` |
+| Zed (global) | `~/.config/zed/prompts/accessibility-reviewer.md` |
+| Zed (project) | `.zed/rules/accessibility.md` |
+| Continue.dev (global) | `~/.continue/rules/accessibility-reviewer.md` |
+| Continue.dev (project) | `.continue/rules/accessibility-reviewer.md` |
+| Aider | `.aider/accessibility.md` |
 
 ## Usage
 
@@ -50,12 +85,29 @@ The agent file is copied to the correct location for your tool, with the right f
 @accessibility-reviewer review this table component for WCAG
 ```
 
-**Cursor / Copilot / Windsurf**
+**Cursor / Copilot / Windsurf / Continue.dev**
 
 Reference the rule in your prompt:
 ```
 Using the accessibility rule, review src/components/LoginForm.tsx for WCAG 2.2 issues
 Using the accessibility rule, audit pages/dashboard.vue for WCAG 2.2 issues
+```
+
+**Zed**
+
+In the AI panel, type `/prompt accessibility-reviewer` to apply the prompt, then describe what to audit.
+
+**Aider**
+
+Pass the file when starting aider:
+```bash
+aider --read .aider/accessibility.md src/components/LoginForm.tsx
+```
+
+Or add it permanently to `.aider.conf.yml`:
+```yaml
+read:
+  - .aider/accessibility.md
 ```
 
 ## Update & uninstall
