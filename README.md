@@ -2,7 +2,7 @@
 
 WCAG 2.2 AA accessibility reviewer agent for AI coding assistants.
 
-Install once, audit any React / Next.js component directly from source code — no running server, no browser extension.
+Install once, audit any React / Next.js or Vue 3 / Nuxt component directly from source code — no running server, no browser extension.
 
 ## Install
 
@@ -55,11 +55,26 @@ The agent file is copied to the correct location for your tool, with the right f
 Reference the rule in your prompt:
 ```
 Using the accessibility rule, review src/components/LoginForm.tsx for WCAG 2.2 issues
+Using the accessibility rule, audit pages/dashboard.vue for WCAG 2.2 issues
 ```
+
+## Update & uninstall
+
+**Update all installations to the latest version:**
+```bash
+npx wcag-agent --upgrade
+```
+Detects every platform where the agent is installed and overwrites it with the current version. A `.bak` backup is created automatically.
+
+**Remove an installation:**
+```bash
+npx wcag-agent --uninstall
+```
+Shows an interactive menu of detected installations so you can choose which one (or all) to remove.
 
 ## What it covers
 
-20 evaluation categories mapped to WCAG 2.2 success criteria:
+21 evaluation categories mapped to WCAG 2.2 success criteria:
 
 1. Page structure and landmarks
 2. Links and navigation
@@ -74,13 +89,14 @@ Using the accessibility rule, review src/components/LoginForm.tsx for WCAG 2.2 i
 11. Native HTML elements
 12. Animations and reduced motion
 13. SVG and icon accessibility
-14. Next.js SPA route announcements
+14. SPA route announcements (Next.js App Router, Vue Router, Nuxt 3)
 15. Language, media, and context changes
 16. WCAG 2.2 new criteria (2.5.7, 3.2.6, 3.3.7, 3.3.8)
 17. Cognitive accessibility
 18. Charts and data visualizations
 19. Progress indicators
 20. Server Actions and form error handling (Next.js 14/15)
+21. Vue 3 / Nuxt patterns — `v-model` labels, `<Teleport>` modals, `<Transition>` reduced-motion, `<NuxtImg>` alt text, `aria-live` in SSR, `useHead()` page titles, component library guidance (Radix Vue, Headless UI, NuxtUI, Vuetify, PrimeVue)
 
 Each finding includes the WCAG success criterion, the affected file and line, the issue, and a concrete fix with code examples.
 
