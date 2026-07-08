@@ -97,6 +97,16 @@ Using the accessibility rule, audit pages/dashboard.vue for WCAG 2.2 issues
 
 In the AI panel, type `/prompt accessibility-reviewer` to apply the prompt, then describe what to audit.
 
+### Report modes
+
+By default the agent returns a **developer report** (WCAG success criteria, file:line, code fixes). Add `--report stakeholder` to get a **business report** instead — plain language, grouped by High/Medium/Low impact, with user impact, effort estimate (S/M/L), and a legal/compliance note (ADA / Section 508 / EAA / Ley 7600). No SC codes or code snippets.
+
+```
+@accessibility-reviewer --report stakeholder audit the checkout flow
+```
+
+Useful when presenting audit results to a PM, client, or legal team.
+
 **Aider**
 
 Pass the file when starting aider:
@@ -150,11 +160,13 @@ Shows an interactive menu of detected installations so you can choose which one 
 20. Server Actions and form error handling (Next.js 14/15)
 21. Vue 3 / Nuxt patterns — `v-model` labels, `<Teleport>` modals, `<Transition>` reduced-motion, `<NuxtImg>` alt text, `aria-live` in SSR, `useHead()` page titles, component library guidance (Radix Vue, Headless UI, NuxtUI, Vuetify, PrimeVue)
 
+Category 17 also flags the **manual-only criteria** most easily missed in code review — Sensory Characteristics (1.3.3), Images of Text (1.4.5), Multiple Ways (2.4.5), Pointer Gestures/Cancellation/Motion Actuation (2.5.1/2.5.2/2.5.4), and Content on Hover or Focus (1.4.13) — which no automated tool reliably detects.
+
 Each finding includes the WCAG success criterion, the affected file and line, the issue, and a concrete fix with code examples.
 
 ## Output format
 
-Every audit returns:
+Every developer audit returns:
 
 - **Critical** — WCAG violations that break access for one or more user groups
 - **Important** — issues that degrade the experience but don't fully block access

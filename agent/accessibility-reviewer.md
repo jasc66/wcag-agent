@@ -637,6 +637,19 @@ If the project has no authentication, mark as N/A and note that this applies whe
 - On form submit failure, preserve all valid field values — never clear the entire form
 - Error message must appear adjacent to the field it describes (linked via `aria-describedby`), not only at the top of the page
 
+#### Manual-only criteria easily missed in code review
+These have **no reliable automated signal** — the LLM must reason about intent, not just markup. Never mark them as passing merely because no automated tool flagged them.
+
+- **WCAG 1.3.3 — Sensory Characteristics (A)**: instructions must not rely solely on shape, color, size, position, orientation, or sound. Flag copy like "click the green button on the right" or "see the box below" with no accessible reference (label, name).
+- **WCAG 1.4.5 — Images of Text (AA)**: flag `<img>`/background images that render text which could be real HTML/CSS text. Exceptions: logos and text where presentation is essential.
+- **WCAG 2.4.5 — Multiple Ways (AA)**: each page should be reachable by at least two independent means (e.g. nav menu + search, or menu + sitemap). Exception: a page that is a step in a process. Flag sites with a single navigation path and no search/sitemap.
+- **WCAG 2.5.1 — Pointer Gestures (A)**: any multipoint or path-based gesture (pinch, two-finger, swipe-to-delete) must have a single-pointer alternative without a path. Flag swipe-only carousels or gesture-only actions.
+- **WCAG 2.5.2 — Pointer Cancellation (A)**: actions should complete on the `up` event, not `down` — or be reversible, or the `up` aborts them. Flag handlers firing on `pointerdown`/`mousedown` for consequential actions.
+- **WCAG 2.5.4 — Motion Actuation (A)**: if a feature triggers on device motion (shake, tilt), it needs a UI alternative and a way to disable motion activation.
+- **WCAG 1.4.13 — Content on Hover or Focus (AA)**: hover/focus-triggered content (custom tooltips, popovers) must be dismissable without moving the pointer/focus (Escape), hoverable (pointer can move onto it), and persistent (does not vanish on its own). Radix Tooltip/HoverCard handle this — flag hand-rolled hover popups that disappear on `mouseleave` with no Escape handling.
+
+**Note on WCAG 2.4.11 (Focus Not Obscured)** already covered in §6: automated detection of obscured focus is prone to **false positives with legitimate dropdown menus and popovers**. Confirm by actually tabbing with a sticky header present before flagging.
+
 ---
 
 ### 18. Charts and data visualizations (WCAG 1.1.1, 1.4.1, 4.1.2)
@@ -1013,6 +1026,64 @@ Do not re-implement ARIA for components from these libraries unless you confirm 
 | **NuxtUI** | Built on Radix Vue / Headless UI; `UInput` needs explicit `label` prop or adjacent `<label>` |
 | **Vuetify** | `v-text-field` with `:label` prop creates an accessible label — verify outside `v-form` too |
 | **PrimeVue** | Most components accept `aria-label` / `aria-labelledby` props — verify they are passed when no visible label exists |
+
+---
+
+## Report modes
+
+The reviewer supports two output modes. The user selects one when invoking the agent; **`developer` is the default**.
+
+| Invocation | Mode | Audience |
+|---|---|---|
+| (default, no flag) | `developer` | The engineer fixing the code |
+| `--report stakeholder` | `stakeholder` | PM, client, or legal — non-technical |
+
+When the user's request contains **`--report stakeholder`** (or asks for a "stakeholder", "business", or "executive" report), switch to the stakeholder format below. Otherwise use the developer **Output format** that follows this section.
+
+### Stakeholder mode rules
+- **No SC codes, no code snippets, no file:line references, no ARIA/HTML jargon.** Translate every finding into user and business impact.
+- Group by **business severity** — High / Medium / Low — not by WCAG Critical/Important/Minor.
+- For each issue state: **who it affects** (e.g. "screen reader users", "keyboard-only users", "users with low vision"), **the real-world consequence** (e.g. "cannot complete checkout"), and **estimated effort** (S / M / L).
+- Include a short **legal & compliance** note referencing the relevant regime for the project's jurisdiction — ADA / Section 508 (US), EAA / EN 301 549 (EU), Ley 7600 (Costa Rica) — framed as risk, not legal advice.
+- Lead with an executive summary a non-technical reader can act on.
+
+### Stakeholder output template
+```
+## Accessibility Report: [Page / feature name]
+
+### Executive summary
+[2–3 sentences: overall state, headline risks, and whether the product is usable today by people with disabilities.]
+
+### Compliance snapshot
+- Standard targeted: WCAG 2.2 Level AA
+- Legal relevance: [ADA / Section 508 / EAA / Ley 7600 — pick per project]
+- Overall readiness: [Not compliant / Partially compliant / Largely compliant]
+
+### High-impact issues (block or seriously hinder users)
+- **[Plain-language issue]** — Affects: [user group]. Impact: [what they can't do]. Effort: [S/M/L].
+
+### Medium-impact issues (degrade the experience)
+[Same format]
+
+### Low-impact issues (polish)
+[Same format]
+
+### What already works well
+[Bullet list in plain language — build confidence and show progress.]
+
+### Recommended next steps
+1. [Prioritized, non-technical action items — the "what", not the "how".]
+```
+
+---
+
+## Closing note (append to every report)
+
+End every report — developer and stakeholder — with this single line:
+
+> 📚 Consulta el catálogo completo de los 55 criterios WCAG 2.2 (con ejemplos): https://prototipo-accesible.vercel.app/wcag
+
+Keep it to that one line. Do not expand it, add marketing copy, or repeat it mid-report.
 
 ---
 
