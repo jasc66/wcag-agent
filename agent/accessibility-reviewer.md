@@ -82,6 +82,8 @@ If the project has an accessibility bar with text spacing controls, it likely ex
 Rules when these are present:
 - No fixed heights on text containers — use `min-height` or `auto`
 - No `overflow: hidden` + fixed `max-height` on readable content
+- No `line-clamp-*` combined with a px height cap — see the truncation rules in
+  section 10; the clamp alone is fine, the px cap is what breaks 1.4.12
 - Font sizes in `rem` or `em` — never `px`
 - Layout must survive 200% text zoom without content loss (WCAG 1.4.4)
 
@@ -391,6 +393,33 @@ function Card({ title }: { title: string }) {
 - Font sizes in `rem`/`em`, not `px`
 - Layout reflows correctly at 320px viewport width (WCAG 1.4.10)
 - WCAG 1.4.12: content must not clip/overlap when all four text-spacing properties are at maximum test values simultaneously
+
+#### Truncation: `line-clamp` (WCAG 1.4.12)
+Do not grep only for `max-height` — Tailwind's `line-clamp-*` expands to
+`-webkit-line-clamp` + `overflow: hidden` with **no literal `max-height` in the
+source**, so it is invisible to a search for fixed heights. Search for
+`line-clamp`, `-webkit-line-clamp` and `truncate` as well, in `class`/
+`className` attributes, `<style>` blocks and scoped Vue styles alike.
+
+Not every clamp is a violation — apply this distinction:
+
+- **`line-clamp-*` alone → passes.** It clips by *line count*, so the box grows
+  with `line-height`. The user still sees the same N lines after increasing
+  spacing. Do not report it.
+- **`line-clamp-*` combined with a px height cap** (`max-height`/`height` in px,
+  `h-*`/`max-h-*` Tailwind utilities that resolve to px) **→ fails.** The cap
+  cannot grow, so raising `line-height` pushes lines out of the box: the element
+  no longer shows the N lines it promises. This is the real 1.4.12 violation and
+  the most common one in Tailwind codebases.
+- **Fixed px height + `overflow: hidden` on readable text → fails**, with or
+  without a clamp.
+
+Report as: the element shows fewer lines than its clamp promises once spacing is
+applied. Fix is normally to drop the px cap, not the `line-clamp`.
+
+Scope note: WCAG 1.4.12 applies to **visually rendered text**. Content that is
+screen-reader-only (`sr-only` — `position: absolute` clipped to 1px) is out of
+scope and must never be reported as clipped; being clipped is its purpose.
 
 #### Focus ring on dark backgrounds (Tailwind)
 `ring-offset-*` color must match the actual background of the element in each theme — not just the default `ring-offset-background` token. On dark cards or modals, `ring-offset-background` may resolve to a light color, making the ring invisible.
@@ -1122,6 +1151,7 @@ Each entry:
 - [ ] Verify in all active themes (dark, high-contrast if applicable)
 - [ ] Scale text to 200% — no content loss or overlap
 - [ ] Apply all four text-spacing values simultaneously (1.4.12 test, if project has a11y bar)
+- [ ] Grep `line-clamp` / `truncate` — flag only those with a px height cap (1.4.12)
 - [ ] Enable prefers-reduced-motion — animations stop or simplify
 - [ ] Trigger a search — screen reader announces result count without focus moving
 - [ ] Submit form with errors — fields preserve values, errors adjacent to fields with role="alert"
