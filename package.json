@@ -23,6 +23,14 @@
   ],
   "author": "Alonso Salguero",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasc66/wcag-agent.git"
+  },
+  "homepage": "https://portafolio-pro-jasc.vercel.app/projects/wcag-agent",
+  "bugs": {
+    "url": "https://github.com/jasc66/wcag-agent/issues"
+  },
   "bin": {
     "wcag-agent": "bin/install.js"
   },
