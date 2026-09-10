@@ -1,6 +1,6 @@
 {
   "name": "wcag-agent",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "WCAG 2.2 accessibility reviewer agent — install for Claude Code, Cursor, GitHub Copilot, Windsurf, Zed, Continue.dev, or Aider. Supports React/Next.js and Vue 3/Nuxt.",
   "keywords": [
     "wcag",
