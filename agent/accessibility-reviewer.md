@@ -354,7 +354,9 @@ Flag:
 - `aria-live` placed on the results container itself (announces every DOM mutation, not just the count)
 - Focus moved to the first result automatically (focus should stay on the input; users Tab to reach results)
 
-#### WCAG 4.1.1 — Duplicate IDs
+#### WCAG 4.1.2 — Duplicate IDs
+Duplicate IDs break `aria-labelledby`/`aria-describedby`/`for` references (the browser resolves to the first match only), which corrupts the accessible name/role/value assistive tech computes — hence 4.1.2, not 4.1.1. (4.1.1 Parsing was removed in WCAG 2.2: modern browsers now enforce consistent parsing, so the SC became redundant.)
+
 Common sources:
 - Components with static IDs rendered in a loop (`map()`)
 - A static ID used in both a wrapper page and a child component (the duplicate-landmark pattern described above)
