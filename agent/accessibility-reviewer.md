@@ -505,7 +505,7 @@ Flag:
 
 **Informative standalone SVG (conveys meaning, not interactive):**
 ```tsx
-<svg aria-hidden="false" role="img" aria-labelledby="icon-title">
+<svg role="img" aria-labelledby="icon-title">
   <title id="icon-title">PDF document</title>
   ...
 </svg>
@@ -708,7 +708,9 @@ Charts (Recharts, Chart.js, D3, Victory, etc.) present complex data that screen 
 ```tsx
 <figure>
   <figcaption>WCAG Compliance Trend — Jan to Jun 2026</figcaption>
-  <div role="img" aria-label="Line chart showing compliance trend" aria-hidden="true">
+  {/* The table below carries the data, so the SVG is hidden; no role/aria-label here
+      (role="img" + aria-label combined with aria-hidden="true" is contradictory) */}
+  <div aria-hidden="true">
     <ResponsiveContainer>...</ResponsiveContainer>
   </div>
   {/* sr-only table provides the same data to screen reader users */}
@@ -999,8 +1001,8 @@ Flag:
 <!-- ✅ Descriptive alt -->
 <NuxtImg src="/hero.jpg" alt="Team collaborating at desks in a bright office" />
 
-<!-- ✅ Truly decorative — also add aria-hidden -->
-<NuxtImg src="/bg-pattern.svg" alt="" aria-hidden="true" />
+<!-- ✅ Truly decorative — alt="" is enough (aria-hidden is redundant) -->
+<NuxtImg src="/bg-pattern.svg" alt="" />
 ```
 
 `<NuxtPicture>` renders `<picture>` + `<img>` — the `alt` prop maps to the underlying `<img>`. Verify the prop is passed and descriptive.
