@@ -151,7 +151,7 @@ Shows an interactive menu of detected installations so you can choose which one 
 11. Native HTML elements
 12. Animations and reduced motion
 13. SVG and icon accessibility
-14. SPA route announcements (Next.js App Router, Vue Router, Nuxt 3)
+14. SPA route announcements (Vue Router, Nuxt 3; Next.js built-in announcer and duplicates)
 15. Language, media, and context changes
 16. WCAG 2.2 new criteria (2.5.7, 3.2.6, 3.3.7, 3.3.8)
 17. Cognitive accessibility

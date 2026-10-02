@@ -240,18 +240,29 @@ CSS `order`, `flex-direction: row-reverse`, or absolute positioning can make vis
 - Do not re-implement ARIA for Radix primitives (Dialog, Select, Tooltip, Accordion, etc.)
 - Do not use `aria-hidden="true"` on content that should be accessible
 
-#### `aria-hidden` must always be the string `"true"`
-`aria-hidden` without `="true"` does not reliably work — some browsers treat the bare attribute as truthy, others ignore it. Always use the explicit string value.
-```tsx
-// ❌ Bare attribute — unreliable behavior
-<span aria-hidden>icon</span>
-// ❌ Boolean — React serializes this as the string "true" but it's a footgun
-<span aria-hidden={true}>icon</span>
+#### `aria-hidden` must render as `"true"` — depends on the template language
+What matters is the attribute value in the rendered DOM. ARIA treats an empty `aria-hidden=""` as undefined, so the element is **not** hidden.
 
-// ✅ Always use the string
+**JSX (React / Next.js) — do NOT flag these.** React serializes both forms to `aria-hidden="true"`:
+```tsx
+// ✅ All three render aria-hidden="true"
+<span aria-hidden>icon</span>
+<span aria-hidden={true}>icon</span>
 <span aria-hidden="true">icon</span>
 ```
-Grep pattern to find violations: `aria-hidden(?!="true")` or search for `aria-hidden={` (boolean form).
+
+**Plain HTML and Vue templates — flag the bare attribute.** It renders as `aria-hidden=""`, which hides nothing:
+```html
+<!-- ❌ Renders aria-hidden="" — not hidden -->
+<span aria-hidden>icon</span>
+<span aria-hidden="">icon</span>
+
+<!-- ✅ -->
+<span aria-hidden="true">icon</span>
+<span :aria-hidden="true">icon</span>  <!-- Vue 3 binding renders "true" -->
+```
+
+Grep pattern (only in `.html` / `.vue` files, never `.jsx` / `.tsx`): `aria-hidden(\s|>|=""|/)`. Do not flag `aria-hidden="false"` or dynamic bindings like `aria-hidden={isOpen}` / `:aria-hidden="isOpen"`.
 
 #### `role="alert"` — do not add redundant live region attributes
 `role="alert"` implies `aria-live="assertive"` + `aria-atomic="true"`. Adding these explicitly can cause double announcements in some screen readers.
@@ -517,32 +528,18 @@ Numeric or score badges that carry meaning must have a screen-reader-only label 
 ```
 
 ### 14. SPA route change announcements (Next.js / Vue Router / Nuxt)
-Single-page frameworks navigate without full page reloads — screen readers receive no announcement by default. This is a WCAG 4.1.3 / best-practice gap.
+Single-page frameworks navigate without full page reloads. Unless the framework ships its own route announcer, screen readers receive no announcement. This is a WCAG 4.1.3 / best-practice gap.
 
 **What to check:**
-- Is there a live region that announces the new page title after navigation?
+- Is there exactly one mechanism that announces the new page title after navigation (built-in or custom, never both)?
 - Does focus move to a logical location after route change?
 
-#### Next.js App Router
-Must be a `'use client'` component in the root layout:
-```tsx
-'use client'
-import { usePathname } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+#### Next.js (App Router and Pages Router) — built-in, do NOT add one
+Next.js ships its own route announcer (`<next-route-announcer>`), which reads `document.title` (falling back to the first `<h1>`, then the pathname) after every client-side navigation. Do **not** flag a missing announcer in Next.js and do **not** recommend adding one — a second live region makes screen readers announce every page change twice.
 
-export function RouteAnnouncer() {
-  const pathname = usePathname()
-  const ref = useRef<HTMLParagraphElement>(null)
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.textContent = `Page loaded: ${document.title}`
-    }
-  }, [pathname])
-
-  return <p ref={ref} aria-live="polite" aria-atomic="true" className="sr-only" />
-}
-```
+Check instead:
+- Every route sets a unique, descriptive title (`metadata` / `generateMetadata` in `app/**/page.tsx`, or `<Head><title>` in the Pages Router). The built-in announcer is only as good as the title — this is where Next.js apps actually fail.
+- Flag as **Important** any custom announcer in a Next.js app (a `RouteAnnouncer` component, or an `aria-live` region updated on `usePathname()` / `router.events` changes) — it duplicates the built-in one. Recommend removing it.
 
 #### Vue Router (standalone Vue 3)
 Add an `afterEach` hook and a permanent live region in `App.vue`:
@@ -566,7 +563,15 @@ router.afterEach(() => {
 ```
 
 #### Nuxt 3
-Use a client-side plugin that hooks into `page:finish`:
+Nuxt does not announce routes by default. On Nuxt 3.12+, add the built-in component once in `app.vue`:
+```vue
+<!-- app.vue -->
+<template>
+  <NuxtRouteAnnouncer />
+  <NuxtLayout><NuxtPage /></NuxtLayout>
+</template>
+```
+On older Nuxt versions, use a client-side plugin that hooks into `page:finish`:
 ```ts
 // plugins/route-announcer.client.ts
 export default defineNuxtPlugin((nuxtApp) => {
@@ -590,7 +595,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 Note: Nuxt 3.10+ includes `experimental.viewTransition` — it does not replace route announcements for screen readers.
 
-Flag when: the root layout / `App.vue` / `layouts/default.vue` has no visible route announcement mechanism.
+Flag when: a Vue Router or Nuxt app (or a React SPA without Next.js, e.g. React Router + Vite) has no route announcement mechanism in `App.vue` / `app.vue` / `layouts/default.vue` / the root component. Never flag this in Next.js — see above.
 
 ### 15. Language, media, and navigation consistency
 
@@ -1161,9 +1166,9 @@ Each entry:
 - [ ] Charts: role="img" + aria-label on container; data also available as text or table
 - [ ] Progress bars: aria-valuenow/min/max present and update to reflect current value
 - [ ] Emoji with meaning: role="img" + aria-label present
-- [ ] Inspect DOM for bare aria-hidden attributes (must always be aria-hidden="true")
+- [ ] Inspect the rendered DOM for `aria-hidden=""` (bare attribute in HTML / Vue templates) — must be `aria-hidden="true"`; in JSX `aria-hidden` and `aria-hidden={true}` are fine
 - [ ] Check for duplicate IDs: components rendered in lists use useId() or prop-based IDs
-- [ ] Navigate between pages with keyboard — screen reader announces new page title
+- [ ] Navigate between pages with keyboard — screen reader announces new page title exactly once (Next.js: built-in announcer, no custom one)
 - [ ] (Vue / Nuxt) Open a Teleport modal — focus moves in, Escape closes and returns focus, Tab stays inside
 - [ ] (Vue / Nuxt) Enable prefers-reduced-motion — Transition / TransitionGroup animations stop or simplify
 - [ ] (Nuxt) Check each page has a unique `<title>` via `useHead()` or `useSeoMeta()`
@@ -1175,9 +1180,9 @@ Each entry:
 
 ## Severity guidance
 
-**Critical**: Breaks access for one or more user groups. Keyboard trap, missing label on form input, missing alt on informative image, color contrast failure, icon-only button without accessible name, no route announcement in SPA, chart with no text alternative, `role="progressbar"` missing required ARIA attributes, Server Action errors with no field association.
+**Critical**: Breaks access for one or more user groups. Keyboard trap, missing label on form input, missing alt on informative image, color contrast failure, icon-only button without accessible name, no route announcement in a Vue Router / Nuxt / non-Next React SPA (Next.js has one built in), chart with no text alternative, `role="progressbar"` missing required ARIA attributes, Server Action errors with no field association.
 
-**Important**: Degrades experience but doesn't fully block. Missing caption on table, generic link text ("read more"), missing skip link, heading hierarchy skip, focus obscured by sticky header, animation without `prefers-reduced-motion`, form without confirmation step for irreversible action, tablist without `aria-label`, bare `aria-hidden` without `="true"`, muted text token below 4.5:1 contrast, missing loading state announcement.
+**Important**: Degrades experience but doesn't fully block. Missing caption on table, generic link text ("read more"), missing skip link, heading hierarchy skip, focus obscured by sticky header, animation without `prefers-reduced-motion`, form without confirmation step for irreversible action, tablist without `aria-label`, bare `aria-hidden` in HTML or Vue templates (renders `aria-hidden=""`), duplicate route announcer in Next.js, muted text token below 4.5:1 contrast, missing loading state announcement.
 
 **Minor**: Polish and best practice. Missing `autocomplete` on personal data fields, emoji without `role="img"` where meaning is contextually clear, PDF link missing format indicator, `lang` missing on inline foreign text, abbreviation without `<abbr>` on first use, score badge without sr-only label.
 
@@ -1191,7 +1196,8 @@ Each entry:
 - `prefers-color-scheme` media queries when the project controls themes manually via class toggling
 - `aria-live="assertive"` + `aria-atomic="true"` on an element that already uses `role="alert"` (redundant, may double-announce)
 - `aria-label` directly on a Lucide SVG icon inside a button (label goes on the `<button>`, not the icon)
-- `aria-hidden` as a bare attribute or boolean — always `aria-hidden="true"` as a string
+- Rewriting `aria-hidden` or `aria-hidden={true}` in JSX — React already renders `aria-hidden="true"` (only the bare attribute in HTML / Vue templates is a bug)
+- A custom route announcer in Next.js — the framework already has one; adding another causes double announcements
 - `role="main"` on any element that is not `<main>`
 - `disabled` attribute on submit buttons for loading state — prefer `aria-disabled` to keep the button focusable
 - Adding `role="list"` and `role="listitem"` to non-list elements — restructure to use native `<ul>`/`<li>` instead
